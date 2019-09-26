@@ -1,2 +1,2 @@
 # F28WP-coursework
-Coursework for Web Programming
+A multiplayer, top-down arena shooter, similar to Quake
