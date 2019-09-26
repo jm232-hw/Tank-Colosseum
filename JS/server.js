@@ -1,33 +1,96 @@
-//https://socket.io/docs/
+
 var express = require("express");
 var app = express();
 var serv = require("http").Server(app);
 var io = require('socket.io').listen(serv);
-//The Modules I'm importing. 
 
-let connections = []; //Array to hold all the sockets
 
-app.get('/', function(req, res){
+let connections = []; 
+var playerArray = []; 
+
+app.get('/', function (req, res) {
     res.sendFile(__dirname + '/Client/index.html');
-}); // For any get requests (where the url contains no pathways), our server will only send back the index page in the client folder.
-//Doesnt have access to the server file. 
-app.use('/Client', express.static(__dirname + '/Client')); //Serves up all static files within the client folder. 
-
-serv.listen(3000, ()=> console.log('Listening on Port 3000 (Local Host): ')); //Listening on port 3000 local Machine e.g http://localhost:3000/
-
-
-io.sockets.on('connection', function(socket){ // If anyone connects to localhost:3000, this call back function will fire. 
-    connections.push(socket);
-    console.log('Connection Established, currently %d Sockets', connections.length);
-
-    socket.on('client_message', (data)=>{ //If the client sends back a message of "client_message" to the server, this call back function will fire. 
-        console.log("Message sent over from Client to Server: %s", data.msg);
-    });
-
-    socket.on('disconnect', () =>{ //disconnect is a pre-defined function, if anyone closes the web page, this call back function will fire.
-        connections.splice(connections.indexOf(socket), 1);
-        console.log("A socket disconnected, currently sockets left: %d", connections.length); 
-    });
-
-    socket.emit('server_message', {msg: "Hello From Server"}); //Sending a message from the server to the clients. Client Page needs to handle this. 
 });
+app.use('/Client', express.static(__dirname + '/Client'));  
+
+serv.listen(3000, () => console.log('Listening on Port 3000 (Local Host): ')); 
+
+
+io.sockets.on('connection', function (socket) { 
+    var player = createPlayer(250, 250, "p", socket.id); 
+    connections.push(socket);
+    console.log('Connection Established: A Socket with socket ID: %s has been created, Currently %d Sockets', socket.id, connections.length);
+
+    socket.on('disconnect', () => { 
+        connections.splice(connections.indexOf(socket), 1);
+        console.log("A socket disconnected of socket ID: %s, current sockets left: %d", socket.id, connections.length);
+        for (let player of playerArray) {
+            if (player.socketID === socket.id) {
+                playerArray.splice(playerArray.indexOf(player), 1);
+            }
+        }
+    });
+
+    socket.on('userMovement', (data) => {
+        switch (data.key) {
+            case 'a':
+                player.pressingLeft = data.keyState;
+                break;
+            case 'd':
+                player.pressingRight = data.keyState;
+                break;
+            case 'w':
+                player.pressingUp = data.keyState;
+                break;
+            case 's':
+                player.pressingDown = data.keyState;
+                break;
+        }
+    });
+
+});
+
+
+let createPlayer = function (x, y, name, socketID) {
+    var player = {
+        x: x,
+        y: y,
+        name: name,
+        socketID: socketID,
+        pressingDown: false,
+        pressingUp: false,
+        pressingLeft: false,
+        pressingRight: false,
+        speed: 10,
+    };
+
+    player.positionUpdate = function () {
+        if (player.pressingUp) {
+            player.y -= player.speed;
+        }
+        if (player.pressingDown) {
+            player.y += player.speed;;
+        }
+        if (player.pressingLeft) {
+            player.x -= player.speed;;
+        }
+        if (player.pressingRight) {
+            player.x += player.speed;;
+        }
+
+    }
+    playerArray.push(player);
+
+    return player;
+}
+
+setInterval(() => {
+    for (let player of playerArray) {
+        player.positionUpdate();
+
+    }
+    for (let socket of connections) {
+        socket.emit('newPositions', playerArray);
+    }
+
+}, 1000 / 40); // 40 frames per second. 
