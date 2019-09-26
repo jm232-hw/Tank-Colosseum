@@ -1,2 +1,2 @@
-# F28WP-coursework
-A multiplayer, top-down arena shooter, similar to Quake
+# Tank Colosseum
+A multiplayer, top-down arena shooter
