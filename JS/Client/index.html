@@ -1,0 +1,27 @@
+<!-- Basic Html WebPage structure. This is just really to demonstrate how to use the server/client interations-->
+<!-- This is the web page the server will send back to the client -->
+<html>
+    <header></header>
+    <body>
+        <main>
+            <p>Hello World</p>
+            <img src= "Client/Images/Panda.png" alt= "Panda Picture"> <!-- Should be Images/Panda.png to load for the web page, however, the server can't find it unless you add the client folder -->
+                                                                                                                                                                            
+            <br>
+            <br>
+            <button onclick="send_message()">Click Me to send a messge to the server</button> <!-- Basic bullon that everytime clicked calls the function send_message -->
+        </main>
+    </body>
+
+    <script src="/socket.io/socket.io.js"></script> <!-- Need to import this Script to use IO functionality-->
+    <script>
+        var socket = io(); //Function that handles the server message. 
+        socket.on('server_message', (data)=>{
+        console.log("Message sent over from server to client: %s", data.msg);
+    });
+
+    let send_message = function(){ //Function that'll send a message from client to server. 
+            socket.emit('client_message', {msg: "Hello From Client"});
+        }
+    </script>
+</html>    
